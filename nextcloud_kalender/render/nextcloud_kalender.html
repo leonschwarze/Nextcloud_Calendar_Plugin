@@ -1,0 +1,165 @@
+{% extends "plugin.html" %}
+
+{% macro month_table(month) -%}
+<table class="month">
+  <thead><tr><th class="kw">KW</th>{% for h in month.head %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+  <tbody>
+    {% for w in month.weeks %}
+    <tr>
+      <td class="kw">{{ w.kw }}</td>
+      {% for d in w.days %}
+      <td class="{% if d.today %}today{% endif %}{% if d.busy %} busy{% endif %}{% if d.weekend %} we{% endif %}">
+        {%- if not d.other %}<span>{{ d.num }}</span>{% endif -%}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{%- endmacro %}
+
+{% block content %}
+<div lang="de" class="nc {{ layout }} {{ orientation }}{% if not use_colors %} mono{% endif %}" style="--bg: {{ plugin_settings.backgroundColor or '#ffffff' }}; --ink: {{ plugin_settings.textColor or '#000000' }};">
+
+  {% if layout == "agenda" %}
+  <aside class="side">
+    <div class="datebox">
+      <div class="big-day">{{ today.day }}</div>
+      <div class="date-text">
+        <div class="weekday">{{ today.weekday }}</div>
+        <div class="monthname">{{ today.month }}</div>
+        <div class="kw-text">KW {{ today.kw }}</div>
+      </div>
+    </div>
+    {% if month %}{{ month_table(month) }}{% endif %}
+    {% if legend %}
+    <div class="legend">
+      {% for c in legend %}<span class="lg-item"><i style="background: {{ c.color }};"></i>{{ c.name }}</span>{% endfor %}
+    </div>
+    {% endif %}
+  </aside>
+
+  <main class="agenda-wrap">
+    {% if title %}<div class="list-title">{{ title }}</div>{% endif %}
+    <div class="agenda-list fit-box">
+      {% for day in agenda %}
+      <section class="day{% if day.is_today %} is-today{% endif %}">
+        <div class="day-head fit-item">
+          <span class="dl">{{ day.label }}</span><span class="dd">{{ day.date }}</span>
+        </div>
+        {% if not day.events %}
+        <div class="ev empty fit-item">Keine weiteren Termine</div>
+        {% endif %}
+        {% for ev in day.events %}
+        <div class="ev fit-item{% if ev.all_day %} allday{% endif %}{% if ev.now %} running{% endif %}"
+             style="--c: {{ ev.color }}; --fg: {{ ev.fg }};">
+          <div class="ev-time">{% if ev.now %}<span class="now-tag">jetzt</span>{{ ev.until }}{% else %}{{ ev.time }}{% endif %}</div>
+          <div class="ev-main">
+            <div class="ev-title">{{ ev.title }}</div>{% if ev.span %}<span class="ev-span">{{ ev.span }}</span>{% endif %}
+            {% if show_location and ev.location %}<div class="ev-loc">{{ ev.location }}</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </section>
+      {% endfor %}
+      {% if not agenda %}
+      <div class="nothing">Keine Termine in den {{ range_text }}.</div>
+      {% endif %}
+    </div>
+    <div class="more" hidden></div>
+  </main>
+
+  {% else %}
+  <header class="week-head">
+    <div class="wh-title">{{ title or today.long }}</div>
+    <div class="wh-range">{{ range_text }}</div>
+  </header>
+  <div class="week-grid">
+    {% for d in week %}
+    <div class="wcol{% if d.is_today %} is-today{% endif %}{% if d.weekend %} we{% endif %}">
+      <div class="whead"><span class="wn">{{ d.name }}</span><span class="wd">{{ d.date }}</span></div>
+      <div class="wbody fit-box">
+        {% for ev in d.events %}
+        <div class="wev fit-item{% if ev.all_day %} allday{% endif %}{% if ev.now %} running{% endif %}"
+             style="--c: {{ ev.color }}; --fg: {{ ev.fg }};">
+          {% if not ev.all_day %}<div class="wt">{% if orientation == "portrait" %}{{ ev.short }}{% else %}{{ ev.time | replace(" – ", "–") }}{% endif %}</div>{% endif %}
+          <div class="wtitle">{{ ev.title }}</div>
+          {% if show_location and ev.location and not ev.all_day %}<div class="wloc">{{ ev.location }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="more" hidden></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if legend %}
+  <div class="legend legend-row">
+    {% for c in legend %}<span class="lg-item"><i style="background: {{ c.color }};"></i>{{ c.name }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if show_footer %}
+  <footer class="foot">
+    <span>Nextcloud-Kalender{% if failed %} · nicht lesbar: {{ failed | join(", ") }}{% endif %}</span>
+    <span>Stand {{ updated }} Uhr</span>
+  </footer>
+  {% endif %}
+</div>
+
+<script>
+  /* Termine, die nicht mehr auf das Display passen, ausblenden und zählen. */
+  function fitBox(box) {
+    const more = box.parentElement.querySelector(':scope > .more');
+    const items = Array.from(box.querySelectorAll('.fit-item'));
+    items.forEach(el => { el.style.display = ''; });
+    if (more) { more.hidden = true; }
+    box.querySelectorAll('.day').forEach(d => { d.style.display = ''; });
+
+    const overflows = (reserve) => {
+      const limit = box.getBoundingClientRect().bottom - reserve;
+      return items.findIndex(el => el.getBoundingClientRect().bottom > limit + 0.5);
+    };
+    let cut = overflows(0);
+    if (cut < 0) return;
+    // Hinweiszeile einblenden: sie verkleinert die Box, danach neu messen
+    if (more) { more.hidden = false; more.textContent = '+ 0 weitere Termine'; }
+    cut = overflows(0);
+    let hidden = 0;
+    items.forEach((el, i) => {
+      if (i >= cut) {
+        el.style.display = 'none';
+        if (el.matches('.ev:not(.empty), .wev')) hidden++;
+      }
+    });
+    // Tagesüberschriften ohne sichtbare Termine entfernen
+    box.querySelectorAll('.day').forEach(d => {
+      const head = d.querySelector('.day-head');
+      const visible = Array.from(d.querySelectorAll('.ev')).some(e => e.style.display !== 'none');
+      if (head && head.style.display !== 'none' && !visible && d.querySelector('.ev')) {
+        head.style.display = 'none';
+      }
+    });
+    if (more) {
+      if (hidden > 0) {
+        more.textContent = box.classList.contains('wbody') ? `+${hidden}`
+          : (hidden === 1 ? '+ 1 weiterer Termin' : `+ ${hidden} weitere Termine`);
+      } else {
+        more.hidden = true;
+      }
+    }
+  }
+  function fitAll() { document.querySelectorAll('.fit-box').forEach(fitBox); }
+  // Headless-Chrome legt die Seite erst mit kleinerem Fenster an und vergrößert es
+  // für den Screenshot. Deshalb bei jeder Größenänderung (und nach dem Laden der
+  // Schriften) neu messen. Der ResizeObserver läuft vor dem nächsten Zeichnen.
+  fitAll();
+  window.addEventListener('load', fitAll);
+  window.addEventListener('resize', fitAll);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fitAll); }
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(entries => entries.forEach(e => fitBox(e.target)));
+    document.querySelectorAll('.fit-box').forEach(b => ro.observe(b));
+  }
+</script>
+{% endblock %}

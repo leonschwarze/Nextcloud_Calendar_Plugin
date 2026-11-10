@@ -1,0 +1,6 @@
+{
+    "display_name": "Nextcloud Kalender",
+    "id": "nextcloud_kalender",
+    "class": "NextcloudKalender",
+    "repository": ""
+}

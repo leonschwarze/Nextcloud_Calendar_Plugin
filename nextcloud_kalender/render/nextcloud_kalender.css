@@ -1,0 +1,237 @@
+/* Nextcloud Kalender – Layout
+ * Wie beim DWD-Plugin hängen alle Größen an --u, damit das Layout mit jeder
+ * Auflösung skaliert. Für E-Ink: durchgehend Halbfett, kein grauer Text,
+ * keine Haarlinien.
+ */
+
+.nc {
+  --u: min(1vw, 1.667vh);
+  --line: calc(var(--u) * 0.3);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  font-family: "Jost", sans-serif;
+  font-weight: 600;
+  line-height: 1.15;
+  overflow: hidden;
+}
+.nc.portrait { --u: min(1.45vw, 0.98vh); }
+
+/* ================= Agenda ================= */
+.nc.agenda.landscape {
+  grid-template-columns: 31% 1fr;
+  grid-template-rows: 1fr auto;
+  grid-template-areas: "side list" "foot foot";
+  column-gap: calc(var(--u) * 2.2);
+  row-gap: calc(var(--u) * 0.8);
+}
+.nc.agenda.portrait {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas: "side" "list" "foot";
+  row-gap: calc(var(--u) * 1.2);
+}
+.side { grid-area: side; display: flex; flex-direction: column; gap: calc(var(--u) * 1.6); min-height: 0; }
+.landscape .side { border-right: var(--line) solid currentColor; padding-right: calc(var(--u) * 2); }
+.portrait .side {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: var(--line) solid currentColor;
+  padding-bottom: calc(var(--u) * 1.2);
+}
+
+.datebox { display: flex; align-items: center; gap: calc(var(--u) * 1.4); }
+.big-day { font-size: calc(var(--u) * 12); line-height: 0.85; letter-spacing: -0.03em; }
+.date-text { display: flex; flex-direction: column; gap: calc(var(--u) * 0.3); }
+.weekday { font-size: calc(var(--u) * 3.2); }
+.monthname { font-size: calc(var(--u) * 2.4); }
+.kw-text {
+  align-self: flex-start;
+  font-size: calc(var(--u) * 1.8);
+  padding: 0 0.45em;
+  border: var(--line) solid currentColor;
+  border-radius: 0.6em;
+}
+
+/* Monatsübersicht */
+.month { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: calc(var(--u) * 1.85); }
+.portrait .month { width: 52%; }
+.month th { font-size: 0.85em; padding-bottom: 0.3em; border-bottom: var(--line) solid currentColor; }
+.month td { text-align: center; height: 1.75em; }
+.month .kw { width: 2.1em; font-size: 0.78em; text-align: left; }
+.month td span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65em;
+  height: 1.65em;
+  border-radius: 50%;
+}
+.month td.busy span { box-shadow: inset 0 calc(var(--u) * -0.45) 0 0 currentColor; border-radius: 0.2em; }
+.month td.today span { background: var(--ink); color: var(--bg); border-radius: 50%; box-shadow: none; }
+
+.legend { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 0.6) calc(var(--u) * 1.6); font-size: calc(var(--u) * 1.8); }
+.lg-item { display: inline-flex; align-items: center; gap: 0.35em; }
+.lg-item i { display: inline-block; width: 0.9em; height: 0.9em; border-radius: 0.2em; border: 2px solid currentColor; }
+.landscape .side .legend { margin-top: auto; }
+.portrait .side .legend { display: none; }
+
+/* Terminliste */
+.agenda-wrap { grid-area: list; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.list-title { font-size: calc(var(--u) * 3); margin-bottom: calc(var(--u) * 0.6); }
+.agenda-list { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: calc(var(--u) * 1.1); }
+.day { display: flex; flex-direction: column; gap: calc(var(--u) * 0.55); }
+.day-head {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--u) * 1.2);
+  border-bottom: var(--line) solid currentColor;
+  padding-bottom: calc(var(--u) * 0.2);
+}
+.dl { font-size: calc(var(--u) * 2.8); }
+.dd { font-size: calc(var(--u) * 2); }
+.is-today .day-head .dl {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 0 0.3em;
+  border-radius: 0.2em;
+}
+
+.ev {
+  display: grid;
+  grid-template-columns: calc(var(--u) * 0.9) calc(var(--u) * 14.5) 1fr;
+  column-gap: calc(var(--u) * 1);
+  align-items: start;
+  font-size: calc(var(--u) * 2.2);
+}
+.ev::before {
+  content: "";
+  align-self: stretch;
+  background: var(--c);
+  border-radius: calc(var(--u) * 0.3);
+}
+.mono .ev::before { background: currentColor; }
+.ev-time { font-size: 0.92em; white-space: nowrap; overflow: hidden; }
+.ev-main { min-width: 0; }
+.ev-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ev-loc { font-size: 0.8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-span { font-size: 0.8em; margin-left: 0.5em; }
+.ev.allday .ev-main { display: flex; align-items: baseline; flex-wrap: wrap; }
+.ev.allday .ev-title {
+  display: inline-block;
+  background: var(--c);
+  color: var(--fg);
+  padding: 0 0.35em;
+  border-radius: 0.25em;
+}
+.mono .ev.allday .ev-title { background: transparent; color: inherit; border: var(--line) solid currentColor; }
+.ev.empty { display: block; font-size: calc(var(--u) * 2); padding-left: calc(var(--u) * 1.9); }
+.ev.empty::before { display: none; }
+.now-tag {
+  display: inline-block;
+  margin-right: 0.35em;
+  padding: 0 0.3em;
+  border: var(--line) solid currentColor;
+  border-radius: 0.3em;
+  font-size: 0.8em;
+}
+.nothing { font-size: calc(var(--u) * 2.4); margin-top: calc(var(--u) * 2); }
+
+.more {
+  flex: 0 0 auto;
+  font-size: calc(var(--u) * 2);
+  text-align: center;
+  padding-top: calc(var(--u) * 0.4);
+  border-top: var(--line) dashed currentColor;
+}
+.more[hidden] { display: none; }
+
+.portrait .ev { grid-template-columns: calc(var(--u) * 0.9) calc(var(--u) * 15) 1fr; }
+
+/* ================= Woche ================= */
+.nc.week {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto auto;
+  row-gap: calc(var(--u) * 0.8);
+}
+.week-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(var(--u) * 2);
+  border-bottom: var(--line) solid currentColor;
+  padding-bottom: calc(var(--u) * 0.4);
+}
+.wh-title { font-size: calc(var(--u) * 3.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wh-range { font-size: calc(var(--u) * 2); white-space: nowrap; }
+
+.week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); min-height: 0; }
+.wcol {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  padding: 0 calc(var(--u) * 0.5);
+  border-left: calc(var(--u) * 0.2) solid currentColor;
+}
+.wcol:first-child { border-left: none; }
+.whead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--u) * 0.3) 0;
+  margin-bottom: calc(var(--u) * 0.6);
+  border-radius: calc(var(--u) * 0.6);
+}
+.wn { font-size: calc(var(--u) * 2.4); }
+.wd { font-size: calc(var(--u) * 1.8); }
+.wcol.we .wn { text-decoration: underline; text-underline-offset: 0.15em; }
+.wcol.is-today .whead { background: var(--ink); color: var(--bg); }
+
+.wbody { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: calc(var(--u) * 0.7); }
+.wev {
+  border-left: calc(var(--u) * 0.8) solid var(--c);
+  padding-left: calc(var(--u) * 0.6);
+  font-size: calc(var(--u) * 1.85);
+}
+.mono .wev { border-left-color: currentColor; }
+.wt { font-size: 0.85em; white-space: nowrap; overflow: hidden; }
+.wtitle {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+.wloc { font-size: 0.8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wev.allday { background: var(--c); color: var(--fg); border-left: none; padding: 0.1em 0.35em; border-radius: 0.25em; }
+.mono .wev.allday { background: transparent; color: inherit; border: var(--line) solid currentColor; }
+.wcol .more { font-size: calc(var(--u) * 1.9); }
+.legend-row { justify-content: center; }
+
+.nc.week.portrait .wev { font-size: calc(var(--u) * 1.6); }
+.nc.week.portrait .wn { font-size: calc(var(--u) * 2); }
+.nc.week.portrait .week-head { flex-direction: column; gap: 0; }
+
+/* ================= Fußzeile ================= */
+.foot {
+  grid-area: foot;
+  display: flex;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
+  font-size: calc(var(--u) * 1.6);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.foot span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.foot span:last-child { flex: 0 0 auto; }
+.nc.week .foot { grid-area: auto; }
